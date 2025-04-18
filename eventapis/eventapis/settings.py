@@ -37,15 +37,14 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Phần app mới tạo ra và được thêm mới vào
-    "events.apps.CoursesConfig",
+    "events.apps.EventsConfig",
     'ckeditor',  # Phần soạn thảo văn bản
     'ckeditor_uploader',
-    'debug_toolbar',
+    # 'debug_toolbar',
     'rest_framework',
     'drf_yasg',
     'cloudinary',
     'oauth2_provider',
-
 ]
 
 REST_FRAMEWORK = {
@@ -63,12 +62,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 ROOT_URLCONF = "eventapis.urls"
 
-# CKEDITOR_UPLOAD_PATH = "ckeditors/lessons/"
+CKEDITOR_UPLOAD_PATH = "ckeditors/"
 
 TEMPLATES = [
     {
