@@ -48,13 +48,15 @@ class EventSerializer(serializers.ModelSerializer):
         queryset=Category.objects.all(), source='category', write_only=True
     )
     image = serializers.ImageField(allow_null=True, required=False)
-    video = serializers.FileField(allow_null=True, required=False)
+    video_url = serializers.FileField(allow_null=True, required=False)
+    start_time = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    end_time = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
 
     class Meta:
         model = Event
         fields = [
             'id', 'organizer', 'category', 'category_id', 'name', 'description',
-            'event_time', 'location', 'ticket_price', 'image', 'video',
+            'start_time', 'end_time', 'location', 'ticket_price', 'image', 'video_url',
             'status', 'created_at', 'updated_at'
         ]
         extra_kwargs = {
@@ -65,10 +67,17 @@ class EventSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-        Kiểm tra thời gian sự kiện phải ở tương lai.
+        Kiểm tra thời gian sự kiện hợp lệ: phải ở tương lai và end_time sau start_time.
         """
-        if data.get('event_time') and data['event_time'] <= timezone.now():
-            raise serializers.ValidationError({"event_time": "Thời gian sự kiện phải ở tương lai."})
+        start = data.get('start_time')
+        end = data.get('end_time')
+
+        if start and start <= timezone.now():
+            raise serializers.ValidationError({"start_time": "Thời gian bắt đầu phải ở tương lai."})
+
+        if start and end and end <= start:
+            raise serializers.ValidationError({"end_time": "Thời gian kết thúc phải sau thời gian bắt đầu."})
+
         return data
 
     def create(self, validated_data):
@@ -84,5 +93,5 @@ class EventSerializer(serializers.ModelSerializer):
         """
         d = super().to_representation(instance)
         d['image'] = instance.image.url if instance.image else ''
-        d['video'] = instance.video.url if instance.video else ''
+        d['video_url'] = instance.video_url.url if instance.video_url else ''
         return d

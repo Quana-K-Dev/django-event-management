@@ -15,6 +15,7 @@ from datetime import timedelta
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 from events.serializers import UserSerializer
 import secrets
+from django.db.models import Q
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIView):
@@ -32,7 +33,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIVi
         return [permissions.IsAuthenticated()]
 
     # API Đăng ký
-    @action(methods=['post'], detail=False, url_path='register')
+    @action(methods=['post'], detail=False, url_path='register', permission_classes=[permissions.AllowAny])
     def register(self, request):
         """
         Đăng ký người dùng mới và trả về DRF Token.
@@ -213,3 +214,49 @@ class EventViewSet(viewsets.ViewSet):
         event.status = 'rejected'
         event.save()
         return Response({"detail": "Sự kiện đã bị từ chối."})
+
+    @action(detail=False, methods=['get'], url_path='search', permission_classes=[permissions.AllowAny])
+    def search(self, request):
+        """
+        Tìm kiếm sự kiện theo:
+        - keyword (tên / mô tả),
+        - category (id),
+        - location,
+        - start_date (ngày bắt đầu tìm kiếm),
+        - end_date (ngày kết thúc tìm kiếm)
+        """
+        keyword = request.query_params.get('keyword')
+        category_id = request.query_params.get('category')
+        location = request.query_params.get('location')
+        start_date = request.query_params.get('start_date')  # YYYY-MM-DD
+        end_date = request.query_params.get('end_date')  # YYYY-MM-DD
+
+        # Chỉ tìm kiếm sự kiện đã được duyệt
+        events = Event.objects.filter(status='approved')
+
+        if keyword:
+            events = events.filter(
+                Q(name__icontains=keyword) |
+                Q(description__icontains=keyword)
+            )
+        if category_id:
+            events = events.filter(category_id=category_id)
+        if location:
+            events = events.filter(location__icontains=location)
+
+        if start_date:
+            try:
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+                events = events.filter(end_time__gte=start_dt)
+            except ValueError:
+                return Response({'error': 'start_date không đúng định dạng YYYY-MM-DD'}, status=400)
+
+        if end_date:
+            try:
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+                events = events.filter(start_time__lte=end_dt)
+            except ValueError:
+                return Response({'error': 'end_date không đúng định dạng YYYY-MM-DD'}, status=400)
+
+        serializer = self.serializer_class(events, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

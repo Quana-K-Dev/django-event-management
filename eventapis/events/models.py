@@ -51,7 +51,9 @@ class Event(BaseModel):
     organizer = models.ForeignKey(User, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = RichTextField(null=True)
-    event_time = models.DateTimeField()
+    event_time = models.DateTimeField(null=True)
+    start_time = models.DateTimeField(null=True)
+    end_time = models.DateTimeField(null=True)
     location = models.CharField(max_length=255)
     ticket_price = models.DecimalField(max_digits=10, decimal_places=2)
     image = CloudinaryField(null=True)
@@ -63,7 +65,7 @@ class Event(BaseModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Event: {self.name} | Organizer: {self.organizer.username} | Date: {self.event_time.strftime('%Y-%m-%d %H:%M')}"
+        return f"Event: {self.name} | Date: {self.start_time.strftime('%Y-%m-%d %H:%M')} - {self.end_time.strftime('%Y-%m-%d %H:%M')}"
 
 
 class EventTag(BaseModel):
