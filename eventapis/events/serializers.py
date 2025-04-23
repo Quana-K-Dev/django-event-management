@@ -2,11 +2,13 @@ from rest_framework import serializers
 from events.models import User, Category, Event
 from django.utils import timezone
 
+
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer cho model User.
     Xử lý tạo và cập nhật mật khẩu đúng cách, và hiển thị link avatar nếu có.
     """
+
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'username', 'password', 'avatar', 'is_organizer', 'is_verified']
@@ -32,10 +34,12 @@ class UserSerializer(serializers.ModelSerializer):
         d['avatar'] = instance.avatar.url if instance.avatar else ''
         return d
 
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name']
+
 
 class EventSerializer(serializers.ModelSerializer):
     organizer = UserSerializer(read_only=True)
