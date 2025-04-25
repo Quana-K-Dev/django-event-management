@@ -163,3 +163,22 @@ OAUTH2_PROVIDER = {
 }
 
 AUTH_USER_MODEL = 'events.User'
+
+
+# Cấu hình VNPay
+VNPAY_TMN_CODE = 'YOUR_VNPAY_TMN_CODE'
+VNPAY_HASH_SECRET_KEY = 'YOUR_VNPAY_HASH_SECRET_KEY'
+VNPAY_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
+VNPAY_RETURN_URL = 'http://localhost:8000/tickets/payment/return/'
+
+# Cấu hình gửi email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password'
+DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
+
+# Client_id : Ru0W0uxtzxQLmvscRcHhsWIEDhH86VpMHLphGCPj
+# Client_secret: BEqiUSiNIGpxOE7e5Fmr3w9ZzAoFDkHrOzL2wkBRkUH95PgyaNDzPOUdMj8jAV76D2RMopthVUapKuSDvS6Z6qPEPI7AixKeWEGTuM8k60rq5jJxHqWQg83i3djUlhs9

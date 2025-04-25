@@ -145,17 +145,17 @@ class CategoryAdmin(admin.ModelAdmin):
 # Custom Admin for Event
 class EventAdmin(admin.ModelAdmin):
     form = EventForm
-    list_display = ['id', 'name', 'organizer', 'event_time', 'status', 'category', 'active']
+    list_display = ['id', 'name', 'organizer', 'start_time', 'status', 'category', 'active']
     search_fields = ['name', 'description', 'location']
-    list_filter = ['status', 'category', 'event_time', 'active']
+    list_filter = ['status', 'category', 'start_time', 'active']
     readonly_fields = ['image_view']
 
     def image_view(self, obj):
         if obj.image:
             return mark_safe(f'<img src="{obj.image.url}" width="120" />')
-        return "No image"
+        return "Không có hình ảnh"
 
-    image_view.short_description = 'Image'
+    image_view.short_description = 'Hình ảnh'
 
 
 # Custom Admin for EventTag
