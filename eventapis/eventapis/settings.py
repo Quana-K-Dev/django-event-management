@@ -29,8 +29,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Application definition
+SITE_ID = 3
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -47,6 +48,12 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'oauth2_provider',
 
+    # Google
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 ]
 
 MIDDLEWARE = [
@@ -55,9 +62,22 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    'allauth.account.middleware.AccountMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {"access_type": "online"}
+    }
+}
 
 ROOT_URLCONF = 'eventapis.urls'
 
@@ -172,4 +192,18 @@ OAUTH2_PROVIDER = {
     'SCOPES': {'read': 'Read scope', 'write': 'Write scope'},
 }
 
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
 AUTH_USER_MODEL = 'events.User'
+
+DEFAULT_OAUTH2_CLIENT_ID = 'LUQb13fIsa3mF5nnBakoDDTorY4Hhm88LUw429uz'
+Client_secret = 'SzdKbmdauALjzHrr6GYZcJ5II4PGc6QcVxyM0Z7NxyelDZp3ZSnORXgNemSekVY2yABSAlrPlsQBlcEqbSOFIxaDsHk1kqPVdJgANvjD8RbvyCRf0OTP42bYdIVD47We'
+#
+# GOOGLE_CLIENT_ID = '803363646882-969u7bsui6ujmr0g9tumrenlqsgjb2o9.apps.googleusercontent.com'
+# GOOGLE_OAUTH2_SECRET = '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'

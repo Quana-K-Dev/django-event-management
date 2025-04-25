@@ -16,6 +16,9 @@ from oauth2_provider.models import AccessToken, Application, RefreshToken
 from events.serializers import UserSerializer
 import secrets
 from django.db.models import Q
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from django.conf import settings
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIView):
@@ -56,9 +59,19 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIVi
         """
         Đăng nhập người dùng và trả về DRF Token và OAuth2 access token.
         """
-        username = request.data.get('username')
+        identifier = request.data.get('username')  # Có thể là username hoặc email
         password = request.data.get('password')
-        user = authenticate(username=username, password=password)
+
+        user = authenticate(username=identifier, password=password)
+
+        # Nếu không tìm được bằng username, thử bằng email
+        if not user:
+            try:
+                user_obj = User.objects.get(email=identifier)
+                if user_obj.check_password(password):
+                    user = user_obj
+            except User.DoesNotExist:
+                pass
 
         if not user:
             return Response({'error': 'Thông tin đăng nhập không hợp lệ'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -67,12 +80,18 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIVi
         token, _ = Token.objects.get_or_create(user=user)
 
         # Tạo hoặc lấy ứng dụng OAuth2
-        app, _ = Application.objects.get_or_create(
-            user=user,
-            client_type=Application.CLIENT_CONFIDENTIAL,
-            authorization_grant_type=Application.GRANT_PASSWORD,
-            defaults={'name': f'{user.username}_app'}
-        )
+        # app, _ = Application.objects.get_or_create(
+        #     user=user,
+        #     client_type=Application.CLIENT_CONFIDENTIAL,
+        #     authorization_grant_type=Application.GRANT_PASSWORD,
+        #     defaults={'name': f'{user.username}_app'}
+        # )
+
+        try:
+            app = Application.objects.get(
+                client_id=settings.DEFAULT_OAUTH2_CLIENT_ID)  # Thay 'abc' bằng client_id bạn đã tạo trong admin
+        except Application.DoesNotExist:
+            return Response({'error': 'Ứng dụng OAuth2 không tồn tại.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Tạo token an toàn cho AccessToken
         access_token_value = secrets.token_urlsafe(32)  # Tạo token 32 byte an toàn
@@ -102,20 +121,75 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIVi
             'user': UserSerializer(user).data
         }, status=status.HTTP_200_OK)
 
+    @action(methods=['post'], detail=False, url_path='google-login', permission_classes=[permissions.AllowAny])
+    def google_login(self, request):
+        token = request.data.get('id_token')
+
+        if not token:
+            return Response({'error': 'ID Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), settings.GOOGLE_CLIENT_ID)
+
+            email = idinfo['email']
+            full_name = idinfo.get('name', '')
+            first_name = full_name.split()[0] if full_name else ''
+            last_name = ' '.join(full_name.split()[1:]) if full_name else ''
+
+            user, created = User.objects.get_or_create(email=email, defaults={
+                'username': email.split('@')[0] + secrets.token_hex(2),
+                'first_name': first_name,
+                'last_name': last_name,
+                'is_active': True,
+            })
+
+            app = Application.objects.get(client_id=settings.DEFAULT_OAUTH2_CLIENT_ID)
+
+            access_token_value = secrets.token_urlsafe(32)
+            access_token = AccessToken.objects.create(
+                user=user,
+                application=app,
+                expires=timezone.now() + timedelta(seconds=3600),
+                token=access_token_value,
+                scope='read write'
+            )
+
+            refresh_token_value = secrets.token_urlsafe(32)
+            RefreshToken.objects.create(
+                user=user,
+                application=app,
+                token=refresh_token_value,
+                access_token=access_token
+            )
+
+            return Response({
+                'access_token': access_token.token,
+                'refresh_token': refresh_token_value,
+                'expires_in': 3600,
+                'user': {
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                }
+            })
+
+        except ValueError:
+            return Response({'error': 'ID Token không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
+
     # API Đăng xuất
     @action(methods=['post'], detail=False, url_path='logout')
     def logout(self, request):
         """
-        Đăng xuất: xóa DRF Token và OAuth2 Access Token.
+        Đăng xuất: xóa DRF Token và OAuth2 Access Token/Refresh Token.
         """
         # Xóa DRF Token
         Token.objects.filter(user=request.user).delete()
 
-        # Xóa OAuth2 Access Token
-        if hasattr(request.auth, 'token'):  # Kiểm tra nếu dùng OAuth2
-            AccessToken.objects.filter(user=request.user, token=request.auth.token).delete()
-        elif hasattr(request.auth, 'key'):  # Kiểm tra nếu dùng DRF Token
-            AccessToken.objects.filter(user=request.user).delete()
+        # Xóa tất cả OAuth2 AccessToken và RefreshToken của user
+        access_tokens = AccessToken.objects.filter(user=request.user)
+        for token in access_tokens:
+            RefreshToken.objects.filter(access_token=token).delete()
+        access_tokens.delete()
 
         return Response({'message': 'Đăng xuất thành công'}, status=status.HTTP_200_OK)
 
@@ -260,3 +334,4 @@ class EventViewSet(viewsets.ViewSet):
 
         serializer = self.serializer_class(events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
