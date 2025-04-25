@@ -202,8 +202,6 @@ LOGOUT_REDIRECT_URL = "/"
 
 AUTH_USER_MODEL = 'events.User'
 
-<<<<<<< HEAD
-
 # Cấu hình VNPay
 VNPAY_TMN_CODE = 'YOUR_VNPAY_TMN_CODE'
 VNPAY_HASH_SECRET_KEY = 'YOUR_VNPAY_HASH_SECRET_KEY'
@@ -219,12 +217,14 @@ EMAIL_HOST_USER = 'your-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your-app-password'
 DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
 
+# Hoàng
 # Client_id : Ru0W0uxtzxQLmvscRcHhsWIEDhH86VpMHLphGCPj
 # Client_secret: BEqiUSiNIGpxOE7e5Fmr3w9ZzAoFDkHrOzL2wkBRkUH95PgyaNDzPOUdMj8jAV76D2RMopthVUapKuSDvS6Z6qPEPI7AixKeWEGTuM8k60rq5jJxHqWQg83i3djUlhs9
-=======
-DEFAULT_OAUTH2_CLIENT_ID = 'LUQb13fIsa3mF5nnBakoDDTorY4Hhm88LUw429uz'
-Client_secret = 'SzdKbmdauALjzHrr6GYZcJ5II4PGc6QcVxyM0Z7NxyelDZp3ZSnORXgNemSekVY2yABSAlrPlsQBlcEqbSOFIxaDsHk1kqPVdJgANvjD8RbvyCRf0OTP42bYdIVD47We'
-#
+
+# Quân
+# DEFAULT_OAUTH2_CLIENT_ID = 'LUQb13fIsa3mF5nnBakoDDTorY4Hhm88LUw429uz'
+# Client_secret = 'SzdKbmdauALjzHrr6GYZcJ5II4PGc6QcVxyM0Z7NxyelDZp3ZSnORXgNemSekVY2yABSAlrPlsQBlcEqbSOFIxaDsHk1kqPVdJgANvjD8RbvyCRf0OTP42bYdIVD47We'
+
 # GOOGLE_CLIENT_ID = '803363646882-969u7bsui6ujmr0g9tumrenlqsgjb2o9.apps.googleusercontent.com'
 # GOOGLE_OAUTH2_SECRET = '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'
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
+

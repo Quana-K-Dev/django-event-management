@@ -21,13 +21,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', include('events.urls')),
-<<<<<<< HEAD
     path('admin/', admin_site.urls),
     path('o/', include('oauth2_provider.urls',namespace='oauth2_provider')),
-=======
-    path('admin/', admin.site.urls),
-
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

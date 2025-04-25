@@ -53,14 +53,8 @@ class Event(BaseModel):
     organizer = models.ForeignKey(User, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = RichTextField(null=True)
-<<<<<<< HEAD
     start_time = models.DateTimeField(null=True)  # Thay cho event_time
     end_time = models.DateTimeField(null=True)  # Thêm trường mới
-=======
-    event_time = models.DateTimeField(null=True)
-    start_time = models.DateTimeField(null=True)
-    end_time = models.DateTimeField(null=True)
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
     location = models.CharField(max_length=255)
     ticket_price_regular = models.DecimalField(max_digits=10, decimal_places=2)  # Giá vé thường
     ticket_price_vip = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Giá vé VIP
@@ -73,11 +67,8 @@ class Event(BaseModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-<<<<<<< HEAD
         return f"Event: {self.name} | Organizer: {self.organizer.username}"
-=======
-        return f"Event: {self.name} | Date: {self.start_time.strftime('%Y-%m-%d %H:%M')} - {self.end_time.strftime('%Y-%m-%d %H:%M')}"
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
+
 
 
 class EventTag(BaseModel):
@@ -123,7 +114,7 @@ class Ticket(BaseModel):
 
 class Payment(BaseModel):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
-    method = models.CharField(max_length=20, choices=[('vnpay', 'VNPay'), ('momo', 'Momo'), ('zalopay', 'ZaloPay'), ('credit_card', 'Credit Card')])
+    method = models.CharField(max_length=20, choices=[('vnpay', 'VNPay'), ('momo', 'Momo'), ('zalopay', 'ZaloPay'), ('VNPay', 'VNPay')])
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
     payment_url = models.URLField(blank=True, null=True)  # URL chuyển hướng cổng thanh toán

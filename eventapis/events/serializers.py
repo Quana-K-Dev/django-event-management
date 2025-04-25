@@ -47,27 +47,17 @@ class EventSerializer(serializers.ModelSerializer):
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source='category', write_only=True
     )
-<<<<<<< HEAD
     image = serializers.ImageField(required=False, allow_null=True)
     video = serializers.FileField(required=False, allow_null=True)
-=======
-    image = serializers.ImageField(allow_null=True, required=False)
-    video_url = serializers.FileField(allow_null=True, required=False)
     start_time = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
     end_time = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
 
     class Meta:
         model = Event
         fields = [
             'id', 'organizer', 'category', 'category_id', 'name', 'description',
-<<<<<<< HEAD
             'start_time', 'end_time', 'location', 'ticket_price_regular', 'ticket_price_vip',
             'image', 'video', 'status', 'created_date', 'updated_date'
-=======
-            'start_time', 'end_time', 'location', 'ticket_price', 'image', 'video_url',
-            'status', 'created_at', 'updated_at'
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
         ]
         extra_kwargs = {
             'status': {'read_only': True},
@@ -77,7 +67,6 @@ class EventSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-<<<<<<< HEAD
         Kiểm tra:
         - start_time phải ở tương lai
         - end_time phải sau start_time
@@ -89,17 +78,6 @@ class EventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"start_time": "Thời gian bắt đầu phải ở tương lai."})
 
         if start_time and end_time and end_time <= start_time:
-=======
-        Kiểm tra thời gian sự kiện hợp lệ: phải ở tương lai và end_time sau start_time.
-        """
-        start = data.get('start_time')
-        end = data.get('end_time')
-
-        if start and start <= timezone.now():
-            raise serializers.ValidationError({"start_time": "Thời gian bắt đầu phải ở tương lai."})
-
-        if start and end and end <= start:
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
             raise serializers.ValidationError({"end_time": "Thời gian kết thúc phải sau thời gian bắt đầu."})
 
         return data
@@ -117,7 +95,6 @@ class EventSerializer(serializers.ModelSerializer):
         """
         d = super().to_representation(instance)
         d['image'] = instance.image.url if instance.image else ''
-<<<<<<< HEAD
         d['video'] = instance.video.url if instance.video else ''
         d['created_date'] = instance.created_date.isoformat()  # Định dạng ISO 8601
         return d
@@ -169,7 +146,3 @@ class PaymentSerializer(serializers.ModelSerializer):
         if method not in ['vnpay', 'momo', 'zalopay', 'credit_card']:
             raise serializers.ValidationError({"method": "Phương thức thanh toán không hợp lệ."})
         return data
-=======
-        d['video_url'] = instance.video_url.url if instance.video_url else ''
-        return d
->>>>>>> 2c6710a90a72fe2be02f625e904bd6244528e50e
