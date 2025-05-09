@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from events.models import User, Category, Event, Ticket, Payment
+from events.models import User, Category, Event, Ticket, Payment, ReviewReply, Review
 from django.utils import timezone
 
 
@@ -99,6 +99,7 @@ class EventSerializer(serializers.ModelSerializer):
         d['created_date'] = instance.created_date.isoformat()  # Định dạng ISO 8601
         return d
 
+
 class TicketSerializer(serializers.ModelSerializer):
     event_id = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all(), source='event')
     total_price = serializers.SerializerMethodField()
@@ -130,6 +131,7 @@ class TicketSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"quantity": "Số lượng vé phải lớn hơn 0."})
         return data
 
+
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
@@ -145,4 +147,88 @@ class PaymentSerializer(serializers.ModelSerializer):
         method = data.get('method')
         if method not in ['vnpay', 'momo', 'zalopay', 'credit_card']:
             raise serializers.ValidationError({"method": "Phương thức thanh toán không hợp lệ."})
+        return data
+
+
+class ReviewReplySerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ReviewReply
+        fields = ['id', 'user', 'content', 'created_date']
+
+    def get_user(self, obj):
+        return {
+            'id': obj.user.id,
+            'username': obj.user.username,
+            'is_organizer': obj.user.is_organizer
+        }
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    created_date = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S%z", read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'event', 'user', 'rating', 'comment', 'created_date', 'replies']
+        extra_kwargs = {
+            'event': {'read_only': True}
+        }
+
+    def get_user(self, obj):
+        return {
+            'id': obj.user.id,
+            'username': obj.user.username
+        }
+
+    # def validate_rating(self, value):
+    #     if value < 1 or value > 5:
+    #         raise serializers.ValidationError(("Đánh giá phải trong khoảng từ 1 đến 5 sao."))
+    #     return value
+
+    def validate_comment(self, value):
+        if value and len(value) > 1000:
+            raise serializers.ValidationError(("Bình luận không được vượt quá 1000 ký tự."))
+        if value and not value.strip():
+            raise serializers.ValidationError(("Bình luận không được để trống."))
+        return value
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user') or not request.user.is_authenticated:
+            raise serializers.ValidationError(("Yêu cầu không hợp lệ hoặc người dùng chưa đăng nhập."))
+
+        # For updates, use the event from the existing review instance
+        if self.instance:
+            event = self.instance.event
+        else:
+            event = self.context.get('event')
+            if not event:
+                raise serializers.ValidationError(("Sự kiện không được tìm thấy."))
+
+        # Only apply creation-specific validations for new reviews
+        if not self.instance:
+            # Kiểm tra vé hợp lệ
+            if not event.ticket_set.filter(
+                    user=request.user,
+                    status='booked',
+                    expires_at__gt=timezone.now()
+            ).exists():
+                raise serializers.ValidationError(
+                    ("Bạn cần tham gia sự kiện với vé còn hiệu lực để đánh giá.")
+                )
+
+            # Kiểm tra sự kiện đã kết thúc (bao gồm 24 giờ ân hạn)
+            if event.end_time and not timezone.is_aware(event.end_time):
+                event.end_time = timezone.make_aware(event.end_time)
+            if event.end_time > timezone.now() - timezone.timedelta(hours=24):
+                raise serializers.ValidationError(
+                    ("Chỉ có thể đánh giá sự kiện sau khi kết thúc (hoặc trong vòng 24 giờ sau).")
+                )
+
+            # Kiểm tra đánh giá trùng lặp
+            if Review.objects.filter(event=event, user=request.user).exists():
+                raise serializers.ValidationError(("Bạn đã đánh giá sự kiện này trước đó."))
+
         return data

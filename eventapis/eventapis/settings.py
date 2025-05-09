@@ -214,8 +214,8 @@ AUTH_USER_MODEL = 'events.User'
 # Client_secret: RxpHCMTeO0Ixf2V5sC3KXcKUhNTya5kwNjynP3O5mCsQaUPjordWQvwsAle1aDxAhH9x0uaQ0dunwp9B9xNrxN4NPmejBXi1YDMLHJuqjAKxENvds93HPBM6K7qiq3sF
 
 # Quân
-# DEFAULT_OAUTH2_CLIENT_ID = 'LUQb13fIsa3mF5nnBakoDDTorY4Hhm88LUw429uz'
-# Client_secret = 'SzdKbmdauALjzHrr6GYZcJ5II4PGc6QcVxyM0Z7NxyelDZp3ZSnORXgNemSekVY2yABSAlrPlsQBlcEqbSOFIxaDsHk1kqPVdJgANvjD8RbvyCRf0OTP42bYdIVD47We'
+DEFAULT_OAUTH2_CLIENT_ID = '58E5oVWwAySskJekzMpJNu4OYkXZliTKhqTzdv7c'
+Client_secret = 'gghT3ki5yUskvC6IdmRS2xPG011oSrgkgRT5DOjysR8uRkg9YsyAYgsuoHFhPbwsSVUvDSnkPypyzsGeb8z1xjmU7F0FqYDN8HYqITBYcD1XMnbzbOImO8Um6Eg7Y1iq'
 
 # GOOGLE_CLIENT_ID = '803363646882-969u7bsui6ujmr0g9tumrenlqsgjb2o9.apps.googleusercontent.com'
 # GOOGLE_OAUTH2_SECRET = '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'

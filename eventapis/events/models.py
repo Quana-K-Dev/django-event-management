@@ -9,6 +9,7 @@ import qrcode
 from io import BytesIO
 from email.mime.image import MIMEImage
 
+
 # ------------------ USERS & ROLES ------------------
 class User(AbstractUser):
     avatar = CloudinaryField(null=True)
@@ -73,7 +74,6 @@ class Event(BaseModel):
         return f"Event: {self.name} | Organizer: {self.organizer.username}"
 
 
-
 class EventTag(BaseModel):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
 
@@ -89,7 +89,9 @@ class Ticket(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     ticket_type = models.CharField(max_length=10, choices=[('regular', 'Regular'), ('vip', 'VIP')])
     quantity = models.PositiveIntegerField(default=0)  # Số lượng vé
-    status = models.CharField(max_length=15, choices=[('pending', 'Pending'), ('booked', 'Booked'), ('cancelled', 'Cancelled')], default='pending')
+    status = models.CharField(max_length=15,
+                              choices=[('pending', 'Pending'), ('booked', 'Booked'), ('cancelled', 'Cancelled')],
+                              default='pending')
     qr_code = models.CharField(max_length=100, unique=True, blank=True)
     expires_at = models.DateTimeField()  # Hạn 30 phút hoặc 3 phút
 
@@ -145,13 +147,16 @@ class Ticket(BaseModel):
         email.send(fail_silently=False)
 
     def __str__(self):
-            return f"Ticket: {self.ticket_type} | {self.event.name} | User: {self.user.username} | Status: {self.status}"
+        return f"Ticket: {self.ticket_type} | {self.event.name} | User: {self.user.username} | Status: {self.status}"
+
 
 class Payment(BaseModel):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
     method = models.CharField(max_length=20, choices=[('vnpay', 'VNPay'), ('momo', 'Momo'), ('zalopay', 'ZaloPay')])
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
+    status = models.CharField(max_length=20,
+                              choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')],
+                              default='pending')
     payment_url = models.URLField(max_length=1000, blank=True, null=True)
 
     class Meta:
@@ -195,5 +200,15 @@ class Notification(BaseModel):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
 
+    # created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"Notification: {self.message[:30]}... | User: {self.user.username} | Read: {self.is_read}"
+
+
+class ReviewReply(BaseModel):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='replies')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Nhà tổ chức phản hồi
+    content = models.TextField()
+
+    def __str__(self):
+        return f"Reply to review {self.review.id} by {self.user.username}"

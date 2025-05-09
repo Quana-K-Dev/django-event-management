@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, mixins
-from events.models import User, Category, Event, Ticket, Payment
+from events.models import User, Category, Event, Ticket, Payment, Review, ReviewReply
 from events import serializers, perms
 from rest_framework import viewsets, generics, parsers, permissions
 from oauth2_provider.models import AccessToken, Application, RefreshToken
@@ -17,13 +17,14 @@ from django.conf import settings
 from rest_framework.authtoken.models import Token
 from django.utils import timezone
 from datetime import timedelta
-from events.serializers import UserSerializer
+from events.serializers import UserSerializer, ReviewSerializer, ReviewReplySerializer
 import secrets
 from django.db.models import Q
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from django.http import JsonResponse
 from events.vnpay import vnpay
+from django.shortcuts import get_object_or_404
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -33,10 +34,12 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
 def hmacsha512(key, data):
     byteKey = key.encode('utf-8')
     byteData = data.encode('utf-8')
     return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
+
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIView):
     """
@@ -51,6 +54,10 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.UpdateAPIVi
         if self.action in ['login', 'register']:  # Đăng ký và đăng nhập
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
+
+    @action(methods=['get'], url_path='current-user', detail=False, permission_classes=[permissions.IsAuthenticated])
+    def get_current_user(self, request):
+        return Response(serializers.UserSerializer(request.user).data)
 
     # API Đăng ký
     @action(methods=['post'], detail=False, url_path='register', permission_classes=[permissions.AllowAny])
@@ -259,7 +266,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     permission_classes = [perms.IsAdminOrReadOnly]
 
 
-class EventViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class EventViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Event.objects.all()
     serializer_class = serializers.EventSerializer
     parser_classes = [parsers.MultiPartParser]
@@ -275,7 +282,7 @@ class EventViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             if self.request.user.is_staff:
                 return Event.objects.all()
             return Event.objects.filter(organizer=self.request.user)
-        return Event.objects.filter(status='approved')
+        return Event.objects.filter(status__in=['approved', 'hot'])
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -319,7 +326,7 @@ class EventViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         end_date = request.query_params.get('end_date')  # YYYY-MM-DD
 
         # Chỉ tìm kiếm sự kiện đã được duyệt
-        events = Event.objects.filter(status='approved')
+        events = Event.objects.filter(status__in=['approved', 'hot'])
 
         if keyword:
             events = events.filter(
@@ -347,6 +354,7 @@ class EventViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         serializer = self.serializer_class(events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class EventTicketViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     """
@@ -386,6 +394,7 @@ class EventTicketViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         except Exception as e:
             return Response({"detail": f"Lỗi khi tạo vé: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class TicketViewSet(viewsets.GenericViewSet):
     """
     ViewSet cho các API liên quan đến vé nói chung
@@ -412,7 +421,8 @@ class TicketViewSet(viewsets.GenericViewSet):
         if ticket.qr_code != qr_code:
             return Response({"status": "invalid", "detail": "Mã QR không hợp lệ."}, status=status.HTTP_400_BAD_REQUEST)
         if ticket.status != 'booked':
-            return Response({"status": "invalid", "detail": "Vé không ở trạng thái hợp lệ."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"status": "invalid", "detail": "Vé không ở trạng thái hợp lệ."},
+                            status=status.HTTP_400_BAD_REQUEST)
         if ticket.expires_at < timezone.now():
             return Response({"status": "invalid", "detail": "Vé đã hết hạn."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -468,6 +478,7 @@ class TicketViewSet(viewsets.GenericViewSet):
             pass
 
         return Response({"detail": "Vé đã được hủy thành công."}, status=status.HTTP_200_OK)
+
 
 class PaymentViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     queryset = Payment.objects.all()
@@ -587,3 +598,109 @@ class PaymentViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
                 return JsonResponse({'RspCode': '00', 'Message': 'Confirm Success'})
         else:
             return JsonResponse({'RspCode': '97', 'Message': 'Invalid Signature'})
+
+
+class EventReviewViewSet(viewsets.GenericViewSet,
+                         mixins.ListModelMixin,
+                         mixins.CreateModelMixin):
+    """
+    ViewSet để quản lý các đánh giá của một sự kiện.
+    """
+    serializer_class = ReviewSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        event_id = self.kwargs.get('event_id')
+        if not event_id:
+            return Review.objects.none()
+        return Review.objects.filter(event_id=event_id).order_by('-created_date')
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        """
+        API Đánh giá sự kiện: /events/{event_id}/reviews/
+        """
+        event_id = self.kwargs.get('event_id')
+        if not event_id:
+            return Response({"detail": "Thiếu event_id trong URL."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response({"detail": "Sự kiện không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(data=request.data, context={'request': request, 'event': event})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(event=event, user=request.user)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ReviewReplyViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
+    """
+    ViewSet để quản lý các phản hồi cho đánh giá.
+    """
+    serializer_class = ReviewReplySerializer
+    permission_classes = [perms.IsVerifiedOrganizer]
+
+    def create(self, request, *args, **kwargs):
+        """
+        API Phản hồi đánh giá: /reviews/{review_id}/replies/
+        Chỉ nhà tổ chức của sự kiện mới có thể phản hồi.
+        """
+        review_id = self.kwargs.get('review_id')
+        if not review_id:
+            return Response({"detail": "Thiếu review_id trong URL."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            review = Review.objects.get(id=review_id)
+        except Review.DoesNotExist:
+            return Response({"detail": "Đánh giá không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Kiểm tra xem người dùng hiện tại có phải là nhà tổ chức của sự kiện không
+        if review.event.organizer != request.user and not request.user.is_staff:
+            return Response({"detail": "Bạn không có quyền phản hồi đánh giá này."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(review=review, user=request.user)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class UserReviewViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    ViewSet để người dùng xem lại các đánh giá của mình.
+    """
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Review.objects.filter(user=self.request.user).order_by('-created_date')
+
+    @action(methods=['delete'], detail=True, url_path='delete')
+    def delete_review(self, request, pk=None):
+        """
+        API Xóa đánh giá: /my-reviews/{review_id}/delete/
+        Chỉ chủ sở hữu đánh giá mới có thể xóa.
+        """
+        review = get_object_or_404(Review, id=pk, user=request.user)
+        review.delete()
+        return Response({"detail": "Đánh giá đã được xóa thành công."}, status=status.HTTP_200_OK)
+
+    @action(methods=['put'], detail=True, url_path='update')
+    def update_review(self, request, pk=None):
+        """
+        API Cập nhật đánh giá: /my-reviews/{review_id}/update/
+        Chỉ chủ sở hữu đánh giá mới có thể cập nhật.
+        """
+        review = get_object_or_404(Review, id=pk, user=request.user)
+        serializer = self.get_serializer(review, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
