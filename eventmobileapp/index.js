@@ -1,8 +1,17 @@
-import { registerRootComponent } from 'expo';
+import 'react-native-url-polyfill/auto';
 
+import React from 'react';
+import { AppRegistry } from 'react-native';
 import App from './App';
+import { AuthProvider } from './config/AuthContext';
+import { Provider as PaperProvider } from 'react-native-paper';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+const Root = () => (
+    <PaperProvider> 
+        <AuthProvider>
+            <App />
+        </AuthProvider>
+     </PaperProvider>
+);
+
+AppRegistry.registerComponent('main', () => Root);

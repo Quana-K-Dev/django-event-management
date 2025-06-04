@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL ='https://b780-171-250-11-112.ngrok-free.app';
+const BASE_URL = 'http://192.168.1.31:8000';
 
 // Định nghĩa các endpoint dựa trên urls.py của backend
 export const endpoints = {
@@ -13,7 +13,8 @@ export const endpoints = {
 
   // Organizer-related
   requestOrganizer: '/organizers/request-organizer/',
-  // verifyOrganizer: (userId) => `/organizers/${userId}/verify/`, // Thêm nếu cần
+  verifyOrganizer: (userId) => `/organizers/${userId}/verify/`,
+  pendingVerification: '/organizers/pending-verification',
 
   // Category-related
   categories: '/categories/',
@@ -23,6 +24,8 @@ export const endpoints = {
   eventDetails: (eventId) => `/events/${eventId}/`,
   searchEvents: '/events/search/',
   eventReviews: (eventId) => `/events/${eventId}/reviews/`,
+  myEvents: '/events/', // Lọc theo organizer trong API
+  editEvent: (eventId) => `/events/${eventId}/`,
 
   // Ticket-related
   eventTickets: (eventId) => `/events/${eventId}/tickets/`,
@@ -41,6 +44,12 @@ export const endpoints = {
   updateReview: (reviewId) => `/my-reviews/${reviewId}/update/`,
   deleteReview: (reviewId) => `/my-reviews/${reviewId}/delete/`,
   reviewReplies: (reviewId) => `/reviews/${reviewId}/replies/`,
+
+  // Notification-related
+  notifications: '/notifications/', // Giả định endpoint cho thông báo
+
+  // Statistics-related
+  statistics: '/statistics/' // Giả định endpoint cho thống kê
 };
 
 // Tạo instance axios với xác thực Bearer token

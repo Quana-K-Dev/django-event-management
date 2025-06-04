@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "eventmobileapp",
+    "name": "main",
+    "displayName": "eventmobileapp",
     "slug": "eventmobileapp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,6 +25,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "permissions": [
+      "camera"
+    ]
   }
+  
 }
