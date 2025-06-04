@@ -32,8 +32,8 @@ const LoginScreen = ({ navigation }) => {
         grant_type: "password",
         username: username,
         password: password,
-        client_id: "MBK54ICEHKmaUKKGwkhxUH0ZYYJpgvGqNelJIuSi",
-        client_secret: "RxpHCMTeO0Ixf2V5sC3KXcKUhNTya5kwNjynP3O5mCsQaUPjordWQvwsAle1aDxAhH9x0uaQ0dunwp9B9xNrxN4NPmejBXi1YDMLHJuqjAKxENvds93HPBM6K7qiq3sF"
+        client_id: "Axuihzp7Xp8PE7ifuGSj3drWLr8ogO0WYmOs4CLj",
+        client_secret: "3a56cSVENjnIByj3RTjl4B7sI8Mu1HoNabX0LSTEojCfvL0bVG5KPJfozZAc5KvPzkEO4CQuTdAol7HKjsxgj5Gh55SkovYx08UoJ6Sql6kooMfq8nAG4eFuyxvi0N45"
       };
 
       const res = await Apis.post(endpoints.login, data, {

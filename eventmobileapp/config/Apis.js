@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://192.168.1.31:8000';
+const BASE_URL = 'http://192.168.1.47:8000';
 
 // Định nghĩa các endpoint dựa trên urls.py của backend
 export const endpoints = {
