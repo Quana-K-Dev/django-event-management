@@ -33,7 +33,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '346d-171-250-11-112.ngrok-free.app',  # thêm ngrok domain vào đây
+    # 'cd19-171-246-123-136.ngrok-free.app',  # thêm ngrok domain vào đây
+    '192.168.1.31',
 ]
 
 SITE_ID = 3
@@ -226,7 +227,8 @@ VNPAY_TMN_CODE = 'LPXTIU1F'
 VNPAY_HASH_SECRET_KEY = '71GVT9UD1D6SUY4CVI81MCUUYF6SQT48'
 VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
 VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
-VNPAY_RETURN_URL = 'http://127.0.0.1:8000/payments/return/'
+# VNPAY_RETURN_URL = 'http://127.0.0.1:8000/payments/return/'
+VNPAY_RETURN_URL = 'http://192.168.1.31:8000/payments/return/'
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

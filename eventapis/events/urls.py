@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from events.views import UserViewSet, CategoryViewSet, EventViewSet, OrganizerViewSet, PaymentViewSet, TicketViewSet, \
-    EventTicketViewSet, EventReviewViewSet, ReviewReplyViewSet, UserReviewViewSet
+    EventTicketViewSet, EventReviewViewSet, ReviewReplyViewSet, UserReviewViewSet #, StatisticsViewSet
 from . import tests
 
 router = DefaultRouter()
@@ -13,6 +13,7 @@ router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'events/(?P<event_id>\d+)/tickets', EventTicketViewSet, basename='event-ticket')
 router.register(r'tickets', TicketViewSet, basename='ticket')
 router.register(r'my-reviews', UserReviewViewSet, basename='my-reviews')
+# router.register(r'statistics', StatisticsViewSet, basename='statistics')
 
 urlpatterns = [
     path('', include(router.urls)),

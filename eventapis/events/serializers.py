@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'avatar', 'is_organizer', 'is_verified']
+        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'avatar', 'is_organizer', 'is_verified', "is_superuser"]
         extra_kwargs = {
             'password': {'write_only': True},
             'is_verified': {'read_only': True}  # Chỉ admin có thể sửa is_verified
@@ -131,6 +131,30 @@ class TicketSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"quantity": "Số lượng vé phải lớn hơn 0."})
         return data
 
+
+class TicketDetailSerializer(serializers.ModelSerializer):
+    event = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Ticket
+        fields = ['id', 'event', 'ticket_type', 'quantity', 'total_price', 'status', 'created_date', 'qr_code']
+
+    def get_event(self, obj):
+        if obj.event:
+            return {
+                'id': obj.event.id,
+                'name': obj.event.name,
+                'location': obj.event.location,
+                'start_time': obj.event.start_time,
+                'end_time': obj.event.end_time,
+            }
+        return None
+
+    def get_total_price(self, obj):
+        if obj.ticket_type == 'vip':
+            return obj.quantity * obj.event.ticket_price_vip
+        return obj.quantity * obj.event.ticket_price_regular
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:

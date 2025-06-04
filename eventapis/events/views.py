@@ -256,6 +256,19 @@ class OrganizerViewSet(viewsets.GenericViewSet):
         user.save()
         return Response({"detail": "Nhà tổ chức đã được xác thực."})
 
+    @action(methods=['get'], url_path='pending-verification', detail=False,
+            permission_classes=[permissions.IsAdminUser])
+    def pending_verification(self, request):
+        """
+        Lấy danh sách các nhà tổ chức chưa được xác thực bởi admin.
+        Chỉ admin (is_superuser=True) mới có thể truy cập.
+        """
+        pending_organizers = User.objects.filter(is_organizer=True, is_verified=False, is_active=True)
+        serializer = self.get_serializer(pending_organizers, many=True)
+        return Response({
+            "message": "Danh sách các nhà tổ chức chưa được xác thực.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     """
@@ -282,7 +295,7 @@ class EventViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Li
             if self.request.user.is_staff:
                 return Event.objects.all()
             return Event.objects.filter(organizer=self.request.user)
-        return Event.objects.filter(status__in=['approved', 'hot'])
+        return Event.objects.filter(status__in=['approved'])
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -402,6 +415,22 @@ class TicketViewSet(viewsets.GenericViewSet):
     queryset = Ticket.objects.all()
     serializer_class = serializers.TicketSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, pk=None):
+        """
+        API Chi tiết vé: /tickets/{ticket_id}/
+        """
+        try:
+            ticket = self.get_object()
+        except Ticket.DoesNotExist:
+            return Response({"detail": "Vé không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+        if ticket.user != request.user and not request.user.is_staff:
+            return Response({"detail": "Bạn không có quyền truy cập vé này."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = serializers.TicketDetailSerializer(ticket)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], url_path='validate', detail=True, permission_classes=[perms.IsVerifiedOrganizer])
     def validate_ticket(self, request, pk=None):
@@ -704,3 +733,18 @@ class UserReviewViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+# class StatisticsViewSet(viewsets.ViewSet, generics.ListAPIView):
+#     permission_classes = [permissions.IsAuthenticated, perms.IsVerifiedOrganizer]
+#
+#     @action(methods=['get'], detail=False, url_path='')
+#     def get_statistics(self, request):
+#         tickets = Ticket.objects.filter(event__organizer=request.user).values('event__name').annotate(quantity=Sum('quantity'))
+#         revenue = Payment.objects.filter(ticket__event__organizer=request.user, status='completed').values('ticket__event__name').annotate(total=Sum('amount'))
+#         feedback = Review.objects.filter(event__organizer=request.user).values('rating').annotate(count=Count('rating'))
+#
+#         return Response({
+#             'tickets': [{'event_name': t['event__name'], 'quantity': t['quantity']} for t in tickets],
+#             'revenue': [{'event_name': p['ticket__event__name'], 'total': p['total']} for p in revenue],
+#             'feedback': [{'rating': f['rating'], 'count': f['count']} for f in feedback]
+#         }, status=status.HTTP_200_OK)
